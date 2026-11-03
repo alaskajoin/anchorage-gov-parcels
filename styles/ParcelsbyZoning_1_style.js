@@ -1,7 +1,7 @@
 var size = 0;
 var placement = 'point';
 
-var style_Retainedfields_1 = function(feature, resolution){
+var style_ParcelsbyZoning_1 = function(feature, resolution){
     var context = {
         feature: feature,
         variables: {}
