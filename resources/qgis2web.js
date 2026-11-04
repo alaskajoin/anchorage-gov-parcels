@@ -12,7 +12,7 @@ var map = new ol.Map({
 });
 
 //initial view - epsg:3857 coordinates if not "Match project CRS"
-map.getView().fit([-16700230.858192, 8651687.147178, -16688157.807192, 8664761.562346], map.getSize());
+map.getView().fit([-16704028.240948, 8657475.104609, -16687245.037524, 8670549.519776], map.getSize());
 
 //change cursor
 function pointerOnFeature(evt) {
@@ -148,7 +148,7 @@ var featureOverlay = new ol.layer.Vector({
 });
 
 var doHighlight = true;
-var doHover = true;
+var doHover = false;
 
 function createPopupField(currentFeature, currentFeatureKeys, layer) {
     var popupText = '';
@@ -502,65 +502,6 @@ var bottomRightContainerDiv = document.getElementById('bottom-right-container')
 
 //geolocate
 
-	let isTracking = false;
-
-	const geolocateButton = document.createElement('button');
-	geolocateButton.className = 'geolocate-button fa fa-map-marker';
-	geolocateButton.title = 'Geolocalizza';
-
-	const geolocateControl = document.createElement('div');
-	geolocateControl.className = 'ol-unselectable ol-control geolocate';
-	geolocateControl.appendChild(geolocateButton);
-	map.getTargetElement().appendChild(geolocateControl);
-
-	const accuracyFeature = new ol.Feature();
-	const positionFeature = new ol.Feature({
-	  style: new ol.style.Style({
-		image: new ol.style.Circle({
-		  radius: 6,
-		  fill: new ol.style.Fill({ color: '#3399CC' }),
-		  stroke: new ol.style.Stroke({ color: '#fff', width: 2 }),
-		}),
-	  }),
-	});
-
-  const geolocateOverlay = new ol.layer.Vector({
-	  source: new ol.source.Vector({
-		features: [accuracyFeature, positionFeature],
-	  }),
-	});
-	
-	const geolocation = new ol.Geolocation({
-	  projection: map.getView().getProjection(),
-	});
-
-	geolocation.on('change:accuracyGeometry', function () {
-	  accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
-	});
-
-	geolocation.on('change:position', function () {
-	  const coords = geolocation.getPosition();
-	  positionFeature.setGeometry(coords ? new ol.geom.Point(coords) : null);
-	});
-
-	geolocation.setTracking(true);
-
-	function handleGeolocate() {
-	  if (isTracking) {
-		map.removeLayer(geolocateOverlay);
-		isTracking = false;
-	  } else if (geolocation.getTracking()) {
-		map.addLayer(geolocateOverlay);
-		const pos = geolocation.getPosition();
-		if (pos) {
-		  map.getView().setCenter(pos);
-		}
-		isTracking = true;
-	  }
-	}
-
-	geolocateButton.addEventListener('click', handleGeolocate);
-	geolocateButton.addEventListener('touchstart', handleGeolocate);
 
 
 //measurement
@@ -874,11 +815,6 @@ let measuring = false;
 	}
 
 
-  function convertToFeet(length) {
-    feet_length = length * 3.2808;
-    return feet_length
-  }
-
   /**
   * format length output
   * @param {ol.geom.LineString} line
@@ -894,15 +830,15 @@ let measuring = false;
         var c2 = ol.proj.transform(coordinates[i + 1], sourceProj, 'EPSG:4326');
         length += ol.sphere.getDistance(c1, c2);
       }
-      feet_length = convertToFeet(length)
-
-      var output;
-      if (feet_length > 5280) {
-          output = (Math.round(feet_length / 5280 * 100) / 100) + ' miles';
-      } else {
-          output = (Math.round(feet_length * 100) / 100) + ' ft';
-      }
-      return output;
+    var output;
+    if (length > 100) {
+      output = (Math.round(length / 1000 * 100) / 100) +
+          ' ' + 'km';
+    } else {
+      output = (Math.round(length * 100) / 100) +
+          ' ' + 'm';
+    }
+    return output;
   };
 
   /**
@@ -910,18 +846,18 @@ let measuring = false;
   * @param {ol.geom.Polygon} polygon The polygon.
   * @return {string} Formatted area.
   */
-  var formatArea = function (polygon) {
-    var sourceProj = map.getView().getProjection();
-    var geom = polygon.clone().transform(sourceProj, 'EPSG:3857');
-    var area = Math.abs(ol.sphere.getArea(geom));
-    var output;
-    if (area > 2589988) {  // 1 sq mi in square meters
-      output = (Math.round((area / 2589988) * 1000) / 1000) + ' sq mi';
-    } else {
-      output = (Math.round(area * 10.7639 * 100) / 100) + ' sq ft';
-    }
-    return output;
-  };
+	var formatArea = function (polygon) {
+		var sourceProj = map.getView().getProjection();
+		var geom = polygon.clone().transform(sourceProj, 'EPSG:3857');
+		var area = Math.abs(ol.sphere.getArea(geom));
+		var output;
+		if (area > 1000000) {
+			output = Math.round((area / 1000000) * 1000) / 1000 + ' ' + 'km<sup>2</sup>';
+		} else {
+			output = Math.round(area * 100) / 100 + ' ' + 'm<sup>2</sup>';
+		}
+		return output.replace('.', ',');
+	};
 
   addInteraction();
 
